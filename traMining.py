@@ -4,12 +4,12 @@ import tensorflow as tf
 from sklearn.preprocessing import OneHotEncoder
 
 # latitude and longitude interval span
-interval = 0.02
+interval = 0.019
 
 # the range of latitude and longitude, take Shanghai city as an example
-l_lat = 31.0
-r_lat = 31.4
-l_lon = 121.2
+l_lat = 30.9
+r_lat = 31.5
+l_lon = 121.1
 r_lon = 121.7
 
 # map Shanghai city into a matrix based on the latitude and longtitude
@@ -184,3 +184,87 @@ def vec4predict(mat_test, vin_test):
 		test_x[i] = test_x[i] / max(test_x[i]) * cont_test[vin_test[i]] * 10
 
 	return test_x
+	
+def weight_variable(shape):
+    initial = tf.truncated_normal(shape, stddev=0.1)
+    return tf.Variable(initial)
+
+def bias_variable(shape):
+    initial = tf.constant(0.1, shape=shape)
+    return tf.Variable(initial)
+
+def conv2d(x, W):
+    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+
+def max_pool_2x2(x):
+    return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
+                        strides=[1, 2, 2, 1], padding='SAME')
+
+# x as input and y_ as output						
+x = tf.placeholder("float", [None, dimension])
+y_ = tf.placeholder("float", [None,2])
+
+# reshape the input to 4 dimension vectors
+x_mat = tf.reshape(x, [-1,32,32,1])
+
+# the filter and bias of the first layer
+W_conv1 = weight_variable([2, 2, 1, 90])
+b_conv1 = bias_variable([90])
+
+# construct the hidden layer and max pooling layer
+h_conv1 = tf.nn.relu(conv2d(x_mat, W_conv1) + b_conv1)
+h_pool1 = max_pool_2x2(h_conv1)
+
+# the filter and bias of the second layer
+W_conv2 = weight_variable([2, 2, 90, 140])
+b_conv2 = bias_variable([140])
+
+# construct the hidden layer and max pooling layer
+h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
+h_pool2 = max_pool_2x2(h_conv2)
+
+# construct the full connected layer
+W_fc1 = weight_variable([8 * 8 * 140, 1200])
+b_fc1 = bias_variable([1200])
+
+h_pool2_flat = tf.reshape(h_pool2, [-1, 8 * 8 * 140])
+h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
+
+# drop out
+keep_prob = tf.placeholder("float")
+h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
+
+# construct the output layer
+W_fc2 = weight_variable([1200, 2])
+b_fc2 = bias_variable([2])
+
+# construct the cnn
+y_conv=tf.nn.softmax(tf.matmul(h_fc1_drop, W_fc2) + b_fc2)
+
+# difine the cross_entropy
+cross_entropy = -tf.reduce_sum(y_*tf.log(y_conv))
+
+# construct optimizer to minimize the cross entropy
+train_step = tf.train.AdamOptimizer(1e-5).minimize(cross_entropy)
+
+# calculate the accuracy
+correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+
+# start the tensorflow graph
+sess.run(tf.initialize_all_variables())
+
+cnt = 0
+with sess.as_default():
+    for i in range(5000):
+        if s == 0:
+            g = generatebatch(trainX,trainY,trainY.shape[0],batch_size)
+        batch_xs,batch_ys = next(g)
+        cnt += 1
+        if cnt == 7:
+            cnt = 0
+        train_step.run(feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 0.5})
+		
+with sess.as_default():
+    print(accuracy.eval(feed_dict={x:testX, y_: testY, keep_prob: 1}))
+
