@@ -186,18 +186,18 @@ def vec4predict(mat_test, vin_test):
 	return test_x
 	
 def weight_variable(shape):
-    initial = tf.truncated_normal(shape, stddev=0.1)
-    return tf.Variable(initial)
+	initial = tf.truncated_normal(shape, stddev=0.1)
+	return tf.Variable(initial)
 
 def bias_variable(shape):
-    initial = tf.constant(0.1, shape=shape)
-    return tf.Variable(initial)
+	initial = tf.constant(0.1, shape=shape)
+	return tf.Variable(initial)
 
 def conv2d(x, W):
-    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+	return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
 
 def max_pool_2x2(x):
-    return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
+	return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
                         strides=[1, 2, 2, 1], padding='SAME')
 
 # x as input and y_ as output						
@@ -251,20 +251,22 @@ train_step = tf.train.AdamOptimizer(1e-5).minimize(cross_entropy)
 correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
 
-# start the tensorflow graph
-sess.run(tf.initialize_all_variables())
 
-cnt = 0
-with sess.as_default():
-    for i in range(5000):
-        if s == 0:
-            g = generatebatch(trainX,trainY,trainY.shape[0],batch_size)
-        batch_xs,batch_ys = next(g)
-        cnt += 1
-        if cnt == 7:
-            cnt = 0
-        train_step.run(feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 0.5})
-		
-with sess.as_default():
-    print(accuracy.eval(feed_dict={x:testX, y_: testY, keep_prob: 1}))
+if __name__ == '__main__':
+	# start the tensorflow graph
+	sess.run(tf.initialize_all_variables())
+
+	cnt = 0
+	with sess.as_default():
+		for i in range(5000):
+			if s == 0:
+				g = generatebatch(trainX,trainY,trainY.shape[0],batch_size)
+			batch_xs,batch_ys = next(g)
+			cnt += 1
+			if cnt == 7:
+				cnt = 0
+			train_step.run(feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 0.5})
+
+	with sess.as_default():
+		print(accuracy.eval(feed_dict={x:testX, y_: testY, keep_prob: 1}))
 
