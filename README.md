@@ -6,8 +6,8 @@ Based on the trajectory, classify the car into two classes (private car / uber c
 - Sample dataset is provided, which contains trajectories of 300 cars in Shanghai.
 
 - This project is mainly composed of two parts. 
- - In the first part, we map the trajectory data into a matrix. 
- - In the second part, we train a CNN as the classifier since the matrix can be considered as a single channel image.
+    - In the first part, we map the trajectory data into a matrix. 
+    - In the second part, we train a CNN as the classifier since the matrix can be considered as a single channel image.
 
 
 For more details, please refer to the code. 
