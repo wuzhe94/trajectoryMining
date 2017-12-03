@@ -189,7 +189,7 @@ def max_pool_2x2(x):
 
 def generatebatch(x, y, n_examples, batch_size):
 	for batch_i in range(n_examples // batch_size):
-		start = batch_i*batch_size
+		start = batch_i * batch_size
 		end = start + batch_size
 		batch_xs = x[start:end]
 		batch_ys = y[start:end]
@@ -213,7 +213,7 @@ if __name__ == '__main__':
 	dimension = len(lat_interval) * len(lon_interval)
 
 	tra = pd.read_csv('tra.csv',
-					  usecols = [1, 2, 3],nrows=70000)
+					  usecols = [1, 2, 3])
 
 	label = pd.read_csv('label.csv',
 						header = None,
@@ -235,11 +235,10 @@ if __name__ == '__main__':
 	train_x, train_y = vec4train(mat_train, label_train, vin_train, w)
 
 	trainX = train_x[:232]
-	testX = train_x[232:]
-
 	trainY = train_y[:232]
-	testY = train_y[232:]
 
+	testX = train_x[232:]
+	testY = train_y[232:]
 
 	# start constructing the tensorflow graph
 	# x as input and y_ as output
@@ -247,7 +246,7 @@ if __name__ == '__main__':
 	y_ = tf.placeholder("float", [None, 2])
 
 	# reshape the input to 4 dimension vectors
-	x_mat = tf.reshape(x, [-1, 32, 32, 1])
+	x_mat = tf.reshape(x, [-1, len(lat_interval), len(lon_interval), 1])
 
 	# the filter and bias of the first layer
 	W_conv1 = weight_variable([2, 2, 1, 60])
@@ -266,10 +265,10 @@ if __name__ == '__main__':
 	h_pool2 = max_pool_2x2(h_conv2)
 
 	# construct the full connected layer
-	W_fc1 = weight_variable([(dimension // 4 + 1) * (dimension // 4 + 1) * 140, 1024])
+	W_fc1 = weight_variable([(len(lat_interval) // 4 ) * (len(lat_interval) // 4 ) * 90, 1024])
 	b_fc1 = bias_variable([1024])
 
-	h_pool2_flat = tf.reshape(h_pool2, [-1, (dimension // 4 + 1) * (dimension // 4 + 1) * 90])
+	h_pool2_flat = tf.reshape(h_pool2, [-1, (len(lat_interval) // 4) * (len(lat_interval) // 4 ) * 90])
 	h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
 
 	# drop out
@@ -295,19 +294,22 @@ if __name__ == '__main__':
 
 	# start the tensorflow graph
 	sess =tf.Session()
-	sess.run(tf.initialize_all_variables())
+	sess.run(tf.global_variables_initializer())
+	batch_size = 30
 
 	with sess.as_default():
 		cnt = 0
-		for i in range(50):
-			if s == 0:
-				g = generatebatch(trainX, trainY, n_examples, batch_size)
+		for i in range(5000):
+			if cnt == 0:
+				g = generatebatch(trainX, trainY, trainY.shape[0], batch_size)
 			batch_xs, batch_ys = next(g)
 			cnt += 1
-			if cnt == n_examples // len(trainX) - 1:
+			if cnt == trainY.shape[0] // batch_size:
 				cnt = 0
-			train_step.run(feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 0.5})
+
+			train_step.run(feed_dict = {x: batch_xs, y_: batch_ys, keep_prob: 0.5})
 
 	with sess.as_default():
 		print(accuracy.eval(feed_dict = {x:testX, y_: testY, keep_prob: 1}))
+
 
